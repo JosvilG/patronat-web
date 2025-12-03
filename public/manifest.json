@@ -1,0 +1,20 @@
+{
+  "short_name": "Web Patronat",
+  "name": "Web del Patronat Festes de Roquetes",
+  "icons": [
+    {
+      "src": "assets/logos/Patronat_color_256x256.webp",
+      "type": "image/webp",
+      "sizes": "256x256"
+    },
+    {
+      "src": "assets/logos/Patronat_color_1024x1024.webp",
+      "type": "image/webp",
+      "sizes": "1024x1024"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}

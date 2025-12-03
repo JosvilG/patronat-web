@@ -1,0 +1,78 @@
+# Node.js dependencies (npm/yarn)
+/node_modules
+/.pnp
+.pnp.js
+
+# Bun dependencies
+/.bun
+
+# Bun's lock file
+bun.lockb
+
+# npm or yarn lock files (for future use)
+package-lock.json
+yarn.lock
+
+# Build output
+/build
+/dist
+
+# Testing
+/coverage
+
+# VS Code settings
+.vscode/
+
+# Tailwind CSS build artifacts (in case you're using PurgeCSS or other build tools)
+.tailwindcss/
+
+# Local environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*
+.env.prod
+.env.preprod
+
+# MacOS system files
+.DS_Store
+
+# Log files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE / Editor config
+.idea/
+
+# Temporary files
+*.swp
+*.swo
+
+# TypeScript build output (if you're using TypeScript)
+*.tsbuildinfo
+
+cors.json
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+.runtimeconfig.json
+firebase-export/
+firebase-data.json
+.firebaserc
+firebase.indexes.json
+
+# Firebase Functions específicos
+functions/node_modules/
+functions/.runtimeconfig.json
+functions/firebase-debug.log
+functions/coverage/
+functions/.nyc_output
+functions/.env/
+
+*storybook.log
+storybook-static

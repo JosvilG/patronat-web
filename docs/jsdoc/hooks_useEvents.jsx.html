@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: hooks/useEvents.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: hooks/useEvents.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState, useEffect } from 'react'
+import { collection, getDocs } from 'firebase/firestore'
+import { db } from '../firebase/firebase'
+
+/**
+ * Custom hook to manage events from Firebase
+ *
+ * This hook handles fetching, formatting and managing events data
+ * from Firebase Firestore, providing a clean interface for calendar
+ * and event listing components.
+ *
+ * @returns {Object} Events data and related functions
+ */
+const useEvents = () => {
+  const [events, setEvents] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
+
+  /**
+   * Loads events from Firebase and formats them for use in calendar components
+   * Converts Firebase event documents to properly formatted event objects with
+   * ISO standard date strings and structured data.
+   */
+  const loadEvents = async () => {
+    try {
+      // Fetch all events from Firestore
+      const snapshot = await getDocs(collection(db, 'events'))
+      const firebaseEvents = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        eventId: doc.id,
+      }))
+
+      // Format events for calendar use, filtering out invalid events
+      const formattedEvents = firebaseEvents
+        .map((event) => {
+          const startDate = event.startDate
+          const startTime = event.startTime
+          const endDate = event.endDate
+          const endTime = event.endTime
+
+          // Skip events with missing date/time information
+          if (!startDate || !startTime || !endDate || !endTime) {
+            return null
+          }
+
+          try {
+            // Create Date objects from the event's date and time strings
+            const startDateTime = new Date(`${startDate}T${startTime}`)
+            const endDateTime = new Date(`${endDate}T${endTime}`)
+
+            // Skip events with invalid dates
+            if (isNaN(startDateTime) || isNaN(endDateTime)) {
+              return null
+            }
+
+            // Return properly formatted event object
+            return {
+              title: event.title,
+              start: startDateTime.toISOString(),
+              end: endDateTime.toISOString(),
+              description: event.description,
+              location: event.location,
+              tags: event.tags || [],
+              eventId: event.eventId,
+              eventURL: event.eventURL,
+              imageURL: event.imageURL,
+            }
+          } catch (error) {
+            // Skip events that cause errors during processing
+            return null
+          }
+        })
+        .filter((event) => event !== null)
+
+      setEvents(formattedEvents)
+    } catch (error) {
+      setError(error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Load events when the component mounts
+  useEffect(() => {
+    loadEvents()
+  }, [])
+
+  /**
+   * Handles event click interactions
+   *
+   * @param {Object} info - Event information object from calendar component
+   */
+  const handleEventClick = (info) => {
+    // Event handling logic can be expanded here
+    const eventId = info.event.extendedProps.eventId
+    // Further actions with eventId can be implemented as needed
+  }
+
+  return { events, loading, error, handleEventClick }
+}
+
+export default useEvents
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#DynamicButton">DynamicButton</a></li><li><a href="global.html#DynamicInput">DynamicInput</a></li><li><a href="global.html#GalleryPage">GalleryPage</a></li><li><a href="global.html#PaginationControl">PaginationControl</a></li><li><a href="global.html#UploadFileForm">UploadFileForm</a></li><li><a href="global.html#appendSheetFromData">appendSheetFromData</a></li><li><a href="global.html#convertToWebP">convertToWebP</a></li><li><a href="global.html#createCustomFormModel">createCustomFormModel</a></li><li><a href="global.html#createFormFieldModel">createFormFieldModel</a></li><li><a href="global.html#createFormFieldsModel">createFormFieldsModel</a></li><li><a href="global.html#createPaymentForPartner">createPaymentForPartner</a></li><li><a href="global.html#exportAllPartnersToExcel">exportAllPartnersToExcel</a></li><li><a href="global.html#exportPartnerToExcel">exportPartnerToExcel</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#formatDateForUI">formatDateForUI</a></li><li><a href="global.html#getActiveSeason">getActiveSeason</a></li><li><a href="global.html#getAllApprovedPartnersWithPayments">getAllApprovedPartnersWithPayments</a></li><li><a href="global.html#getAllPartnerPayments">getAllPartnerPayments</a></li><li><a href="global.html#getAllSeasons">getAllSeasons</a></li><li><a href="global.html#getApprovedPartners">getApprovedPartners</a></li><li><a href="global.html#getMostRecentPayment">getMostRecentPayment</a></li><li><a href="global.html#getPartnerPaymentHistory">getPartnerPaymentHistory</a></li><li><a href="global.html#getPartnerPaymentsByStatus">getPartnerPaymentsByStatus</a></li><li><a href="global.html#getPartnerPaymentsForSeason">getPartnerPaymentsForSeason</a></li><li><a href="global.html#getStatusClass">getStatusClass</a></li><li><a href="global.html#getStatusInfo">getStatusInfo</a></li><li><a href="global.html#getStatusText">getStatusText</a></li><li><a href="global.html#isValidSpanishIban">isValidSpanishIban</a></li><li><a href="global.html#listenPartnerPaymentForSeason">listenPartnerPaymentForSeason</a></li><li><a href="global.html#listenPartnerPaymentHistory">listenPartnerPaymentHistory</a></li><li><a href="global.html#maskIban">maskIban</a></li><li><a href="global.html#normalizePaymentDates">normalizePaymentDates</a></li><li><a href="global.html#processFile">processFile</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#showPopup">showPopup</a></li><li><a href="global.html#updatePartnerPayment">updatePartnerPayment</a></li><li><a href="global.html#useChangeTracker">useChangeTracker</a></li><li><a href="global.html#useEvents">useEvents</a></li><li><a href="global.html#useFetchUsers">useFetchUsers</a></li><li><a href="global.html#useGallery">useGallery</a></li><li><a href="global.html#usePointerAnimation">usePointerAnimation</a></li><li><a href="global.html#useSearchFilter">useSearchFilter</a></li><li><a href="global.html#useSlug">useSlug</a></li><li><a href="global.html#useSortItems">useSortItems</a></li><li><a href="global.html#useStaffMembers">useStaffMembers</a></li><li><a href="global.html#useTaggedImage">useTaggedImage</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#wait">wait</a></li><li><a href="global.html#withRetry">withRetry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Dec 03 2025 20:36:12 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

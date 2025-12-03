@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: hooks/useGallery.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: hooks/useGallery.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState, useEffect } from 'react'
+import { collection, getDocs, doc, deleteDoc } from 'firebase/firestore'
+import { ref, getDownloadURL } from 'firebase/storage'
+import { db, storage } from '../firebase/firebase'
+
+/**
+ * Recupera imágenes públicas almacenadas en Firebase Storage y proporciona navegación circular.
+ *
+ * @returns {{
+ *   galleryImages: Array,
+ *   loadingGallery: boolean,
+ *   currentGalleryIndex: number,
+ *   handleGalleryNext: () => void,
+ *   handleGalleryPrev: () => void
+ * }}
+ */
+const useGallery = () => {
+  const [galleryImages, setGalleryImages] = useState([])
+  const [loadingGallery, setLoadingGallery] = useState(true)
+  const [currentGalleryIndex, setCurrentGalleryIndex] = useState(0)
+
+  useEffect(() => {
+    /**
+     * Fetches images from Firebase, validates them, and sets the gallery data
+     * The function retrieves images from the 'uploads' collection, filters for public
+     * images, validates each image's URL, and finally sorts by creation date.
+     */
+    const fetchImages = async () => {
+      try {
+        // Get all documents from the 'uploads' collection
+        const querySnapshot = await getDocs(collection(db, 'uploads'))
+
+        // Map the documents to an array of image objects
+        const images = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+
+        // Filter for public images that appear to be images based on various properties
+        const publicImages = images.filter(
+          (item) =>
+            item.visibility === 'public' &amp;&amp;
+            ((item.fullPath &amp;&amp; item.fullPath.startsWith('images/')) ||
+              (item.type &amp;&amp; item.type.startsWith('image/')) ||
+              item.isImage === true)
+        )
+
+        // Validate each image by checking URL accessibility
+        const validatedImages = await Promise.all(
+          publicImages.map(async (image) => {
+            try {
+              // Skip images without URL and delete them from the database
+              if (!image.url) {
+                await deleteInvalidImage(image.id)
+                return null
+              }
+
+              // Verify the image URL is valid and accessible
+              await getDownloadURL(ref(storage, image.url))
+              return image
+            } catch (error) {
+              // Delete invalid images that fail URL verification
+              await deleteInvalidImage(image.id)
+              return null
+            }
+          })
+        )
+
+        // Remove null entries (invalid images)
+        const filteredImages = validatedImages.filter((img) => img !== null)
+
+        // Sort images by creation date (newest first)
+        const sortedImages = filteredImages.sort((a, b) => {
+          if (a.createdAt &amp;&amp; b.createdAt) {
+            return b.createdAt.seconds - a.createdAt.seconds
+          }
+          return 0
+        })
+
+        setGalleryImages(sortedImages)
+      } catch (error) {
+        // Silent error in production
+      } finally {
+        setLoadingGallery(false)
+      }
+    }
+
+    fetchImages()
+  }, [])
+
+  /**
+   * Deletes an invalid image from the database
+   *
+   * @param {string} imageId - ID of the image to delete
+   */
+  const deleteInvalidImage = async (imageId) => {
+    try {
+      await deleteDoc(doc(db, 'uploads', imageId))
+    } catch (deleteError) {
+      // Silent error in production
+    }
+  }
+
+  /**
+   * Advances to the next image in the gallery with circular navigation
+   */
+  const handleGalleryNext = () => {
+    setCurrentGalleryIndex((prevIndex) =>
+      prevIndex === galleryImages.length - 1 ? 0 : prevIndex + 1
+    )
+  }
+
+  /**
+   * Goes to the previous image in the gallery with circular navigation
+   */
+  const handleGalleryPrev = () => {
+    setCurrentGalleryIndex((prevIndex) =>
+      prevIndex === 0 ? galleryImages.length - 1 : prevIndex - 1
+    )
+  }
+
+  return {
+    galleryImages,
+    loadingGallery,
+    currentGalleryIndex,
+    handleGalleryNext,
+    handleGalleryPrev,
+  }
+}
+
+export default useGallery
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#DynamicButton">DynamicButton</a></li><li><a href="global.html#DynamicInput">DynamicInput</a></li><li><a href="global.html#GalleryPage">GalleryPage</a></li><li><a href="global.html#PaginationControl">PaginationControl</a></li><li><a href="global.html#UploadFileForm">UploadFileForm</a></li><li><a href="global.html#appendSheetFromData">appendSheetFromData</a></li><li><a href="global.html#convertToWebP">convertToWebP</a></li><li><a href="global.html#createCustomFormModel">createCustomFormModel</a></li><li><a href="global.html#createFormFieldModel">createFormFieldModel</a></li><li><a href="global.html#createFormFieldsModel">createFormFieldsModel</a></li><li><a href="global.html#createPaymentForPartner">createPaymentForPartner</a></li><li><a href="global.html#exportAllPartnersToExcel">exportAllPartnersToExcel</a></li><li><a href="global.html#exportPartnerToExcel">exportPartnerToExcel</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#formatDateForUI">formatDateForUI</a></li><li><a href="global.html#getActiveSeason">getActiveSeason</a></li><li><a href="global.html#getAllApprovedPartnersWithPayments">getAllApprovedPartnersWithPayments</a></li><li><a href="global.html#getAllPartnerPayments">getAllPartnerPayments</a></li><li><a href="global.html#getAllSeasons">getAllSeasons</a></li><li><a href="global.html#getApprovedPartners">getApprovedPartners</a></li><li><a href="global.html#getMostRecentPayment">getMostRecentPayment</a></li><li><a href="global.html#getPartnerPaymentHistory">getPartnerPaymentHistory</a></li><li><a href="global.html#getPartnerPaymentsByStatus">getPartnerPaymentsByStatus</a></li><li><a href="global.html#getPartnerPaymentsForSeason">getPartnerPaymentsForSeason</a></li><li><a href="global.html#getStatusClass">getStatusClass</a></li><li><a href="global.html#getStatusInfo">getStatusInfo</a></li><li><a href="global.html#getStatusText">getStatusText</a></li><li><a href="global.html#isValidSpanishIban">isValidSpanishIban</a></li><li><a href="global.html#listenPartnerPaymentForSeason">listenPartnerPaymentForSeason</a></li><li><a href="global.html#listenPartnerPaymentHistory">listenPartnerPaymentHistory</a></li><li><a href="global.html#maskIban">maskIban</a></li><li><a href="global.html#normalizePaymentDates">normalizePaymentDates</a></li><li><a href="global.html#processFile">processFile</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#showPopup">showPopup</a></li><li><a href="global.html#updatePartnerPayment">updatePartnerPayment</a></li><li><a href="global.html#useChangeTracker">useChangeTracker</a></li><li><a href="global.html#useEvents">useEvents</a></li><li><a href="global.html#useFetchUsers">useFetchUsers</a></li><li><a href="global.html#useGallery">useGallery</a></li><li><a href="global.html#usePointerAnimation">usePointerAnimation</a></li><li><a href="global.html#useSearchFilter">useSearchFilter</a></li><li><a href="global.html#useSlug">useSlug</a></li><li><a href="global.html#useSortItems">useSortItems</a></li><li><a href="global.html#useStaffMembers">useStaffMembers</a></li><li><a href="global.html#useTaggedImage">useTaggedImage</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#wait">wait</a></li><li><a href="global.html#withRetry">withRetry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Dec 03 2025 20:36:12 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

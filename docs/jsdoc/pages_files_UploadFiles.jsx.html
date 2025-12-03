@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/files/UploadFiles.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/files/UploadFiles.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState, useContext } from 'react'
+import log from 'loglevel'
+import { useNavigate } from 'react-router-dom'
+import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage'
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { db, storage } from '../../firebase/firebase'
+import { AuthContext } from '../../contexts/AuthContext'
+import DynamicInput from '../../components/Inputs'
+import DynamicButton from '../../components/Buttons'
+import Loader from '../../components/Loader'
+import { useTranslation } from 'react-i18next'
+import DynamicCard from '../../components/Cards'
+import { validateFile, processFile } from '../../utils/fileValidator'
+import { showPopup } from '../../services/popupService'
+
+/**
+ * UploadFileForm Component
+ *
+ * Provides a form interface for uploading files to Firebase Storage
+ * with metadata stored in Firestore. Supports image optimization,
+ * file validation, and progress tracking.
+ */
+function UploadFileForm() {
+  // Auth context to get current user information
+  const { user } = useContext(AuthContext)
+
+  // File management states
+  const [file, setFile] = useState(null)
+  const [preview, setPreview] = useState(null)
+
+  // Form field states
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [category, setCategory] = useState('')
+  const [tags, setTags] = useState('')
+  const [visibility, setVisibility] = useState('private')
+
+  // Process status states
+  const [uploading, setUploading] = useState(false)
+  const [processing, setProcessing] = useState(false)
+  const [message, setMessage] = useState('')
+  const [progress, setProgress] = useState(0)
+
+  // Navigation and translation hooks
+  const navigate = useNavigate()
+  const { t } = useTranslation()
+
+  // Translation dictionary paths
+  const viewDictionary = 'pages.files.uploadFiles'
+  const popupDictionary = 'components.popup'
+
+  // Set logging level for production
+  log.setLevel('info')
+
+  /**
+   * Handles file selection and processing
+   */
+  const handleFileChange = async (e) => {
+    const selectedFile = e.target.files[0]
+    if (!selectedFile) {
+      setFile(null)
+      setPreview(null)
+      return
+    }
+
+    // Validate file format and size
+    const errorMessage = validateFile(selectedFile, t)
+    if (errorMessage) {
+      setMessage(errorMessage)
+      setFile(null)
+      setPreview(null)
+      return
+    }
+
+    try {
+      setProcessing(true)
+      setMessage(t(`${viewDictionary}.optimizingText`))
+
+      // Process and optimize the file
+      const processedFile = await processFile(selectedFile)
+
+      if (selectedFile.type !== processedFile.type) {
+        setMessage(t(`${viewDictionary}.optimizationSuccessText`))
+      } else {
+        setMessage('')
+      }
+
+      setFile(processedFile)
+
+      // Generate preview for the file
+      const previewUrl = URL.createObjectURL(processedFile)
+      setPreview(previewUrl)
+    } catch (error) {
+      setMessage(t(`${viewDictionary}.optimizationErrorText`))
+      setFile(null)
+      setPreview(null)
+    } finally {
+      setProcessing(false)
+    }
+  }
+
+  /**
+   * Handles form submission and file upload process
+   */
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!file) {
+      setMessage(t(`${viewDictionary}.fileRequired`))
+      return
+    }
+
+    setUploading(true)
+    setMessage('')
+
+    const fileName = name || file.name
+
+    // Determine storage folder based on file type
+    const isImage = file.type.startsWith('image/')
+    const storageFolder = isImage ? 'images' : 'files'
+
+    const storageRef = ref(storage, `${storageFolder}/${fileName}`)
+
+    try {
+      // Create upload task with progress tracking
+      const uploadTask = uploadBytesResumable(storageRef, file)
+
+      uploadTask.on(
+        'state_changed',
+        // Progress handler
+        (snapshot) => {
+          const progressPercent =
+            (snapshot.bytesTransferred / snapshot.totalBytes) * 100
+          setProgress(progressPercent)
+        },
+        // Error handler
+        (error) => {
+          showPopup({
+            title: t(`${popupDictionary}.failTitle`),
+            text: t(`${viewDictionary}.errorText`),
+            icon: 'error',
+            confirmButtonText: t('components.buttons.close'),
+            confirmButtonColor: '#a3a3a3',
+          })
+
+          setUploading(false)
+        },
+        // Completion handler
+        async () => {
+          // Get the download URL
+          const url = await getDownloadURL(uploadTask.snapshot.ref)
+
+          const userId = user.uid
+
+          // Save metadata to Firestore
+          await addDoc(collection(db, 'uploads'), {
+            name: fileName,
+            description,
+            category,
+            tags: tags
+              .split(',')
+              .map((tag) => tag.trim())
+              .filter((tag) => tag),
+            visibility,
+            url,
+            size: file.size,
+            type: file.type,
+            isImage: isImage,
+            fullPath: `${storageFolder}/${fileName}`,
+            userId,
+            createdAt: serverTimestamp(),
+          })
+
+          // Show success notification
+          await showPopup({
+            title: t(`${popupDictionary}.successTitle`),
+            text: t(`${viewDictionary}.popups.successText`),
+            icon: 'success',
+            confirmButtonText: t(`components.buttons.confirm`),
+            confirmButtonColor: '#8be484',
+            onConfirm: () => {
+              navigate('/dashboard')
+            },
+          })
+
+          // Reset form
+          setName('')
+          setDescription('')
+          setCategory('')
+          setTags('')
+          setFile(null)
+          setPreview(null)
+          setVisibility('private')
+
+          // Clean up preview URL
+          if (preview) {
+            URL.revokeObjectURL(preview)
+          }
+          setUploading(false)
+        }
+      )
+    } catch (error) {
+      await showPopup({
+        title: t(`${popupDictionary}.failTitle`),
+        text: t(`${viewDictionary}.errorText`),
+        icon: 'error',
+        confirmButtonText: t(`${popupDictionary}.closeButtonText`),
+        confirmButtonColor: '#a3a3a3',
+      })
+
+      setUploading(false)
+    }
+  }
+
+  return (
+    &lt;div className="flex flex-col items-center justify-center h-auto w-[92%] max-w-xl pb-[4vh] mx-auto">
+      {/* Loading indicator for upload process */}
+      &lt;Loader loading={uploading} />
+      &lt;h1 className="mb-[4vh] text-center sm:t64b t40b">
+        {t(`${viewDictionary}.title`)}
+      &lt;/h1>
+      &lt;form
+        onSubmit={handleSubmit}
+        className="flex flex-col items-center justify-center w-full space-y-[3vh]"
+      >
+        {/* File input field */}
+        &lt;DynamicInput
+          name="file"
+          textId={t(`${viewDictionary}.fileLabel`)}
+          type="document"
+          onChange={handleFileChange}
+          disabled={uploading || processing}
+          required
+        />
+
+        {/* Image preview */}
+        {preview &amp;&amp; (
+          &lt;div className="mt-[3vh] w-full">
+            &lt;DynamicCard type="gallery" imageUrl={preview} />
+          &lt;/div>
+        )}
+
+        {/* Processing indicator */}
+        {processing &amp;&amp; (
+          &lt;div className="flex items-center justify-center mt-[3vh]">
+            &lt;div className="w-[1.5rem] h-[1.5rem] border-2 border-t-2 border-blue-500 rounded-full border-t-transparent animate-spin">&lt;/div>
+            &lt;span className="ml-[2vw]">
+              {t(`${viewDictionary}.optimizingText`)}
+            &lt;/span>
+          &lt;/div>
+        )}
+
+        {/* Status message */}
+        {message &amp;&amp; !processing &amp;&amp; (
+          &lt;div
+            className={`p-[2%] mt-[3vh] text-center text-white w-full ${
+              message.includes('optimizado')
+                ? 'bg-blue-500'
+                : message.includes('Error')
+                  ? 'bg-red-500'
+                  : 'bg-green-500'
+            } rounded-md`}
+          >
+            {message}
+          &lt;/div>
+        )}
+
+        {/* File metadata form fields */}
+        &lt;DynamicInput
+          name="name"
+          textId={`${viewDictionary}.nameLabel`}
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          disabled={uploading || processing}
+        />
+        &lt;DynamicInput
+          name="description"
+          textId={`${viewDictionary}.descriptionLabel`}
+          type="textarea"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          disabled={uploading || processing}
+        />
+        &lt;DynamicInput
+          name="category"
+          textId={`${viewDictionary}.categoryLabel`}
+          type="text"
+          value={category}
+          onChange={(e) => setCategory(e.target.value)}
+          disabled={uploading || processing}
+        />
+        &lt;DynamicInput
+          name="tags"
+          textId={`${viewDictionary}.tagsLabel`}
+          type="text"
+          value={tags}
+          onChange={(e) => setTags(e.target.value)}
+          disabled={uploading || processing}
+        />
+        &lt;p className="w-full t12l"> {t(`${viewDictionary}.tagsDescription`)}&lt;/p>
+        &lt;DynamicInput
+          name="visibility"
+          textId={`${viewDictionary}.visibilityLabel`}
+          type="select"
+          options={[
+            {
+              value: 'private',
+              label: t(`${viewDictionary}.visibilityPrivate`),
+            },
+            { value: 'public', label: t(`${viewDictionary}.visibilityPublic`) },
+          ]}
+          value={visibility}
+          onChange={(e) => setVisibility(e.target.value)}
+          disabled={uploading || processing}
+          required={true}
+        />
+        &lt;p className="w-full t12l">
+          {' '}
+          {t(`${viewDictionary}.visibilityDescription`)}
+        &lt;/p>
+
+        {/* Upload progress indicator */}
+        {uploading &amp;&amp; (
+          &lt;div className="mt-[3vh] w-full">
+            &lt;div className="w-full bg-gray-200 rounded-full">
+              &lt;div
+                className="h-[0.5vh] bg-blue-600 rounded-full"
+                style={{ width: `${progress}%` }}
+              />
+            &lt;/div>
+            &lt;div className="mt-[2vh] text-sm text-center">
+              {Math.round(progress)}%
+            &lt;/div>
+          &lt;/div>
+        )}
+
+        {/* Submit button */}
+        &lt;div className="mt-[3vh]">
+          &lt;DynamicButton
+            type="submit"
+            size="medium"
+            state={uploading || processing ? 'disabled' : 'normal'}
+            textId={
+              uploading
+                ? `${viewDictionary}.uploadingText`
+                : `${viewDictionary}.uploadButton`
+            }
+            disabled={uploading || processing}
+          />
+        &lt;/div>
+      &lt;/form>
+    &lt;/div>
+  )
+}
+
+export default UploadFileForm
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#DynamicButton">DynamicButton</a></li><li><a href="global.html#DynamicInput">DynamicInput</a></li><li><a href="global.html#GalleryPage">GalleryPage</a></li><li><a href="global.html#PaginationControl">PaginationControl</a></li><li><a href="global.html#UploadFileForm">UploadFileForm</a></li><li><a href="global.html#appendSheetFromData">appendSheetFromData</a></li><li><a href="global.html#convertToWebP">convertToWebP</a></li><li><a href="global.html#createCustomFormModel">createCustomFormModel</a></li><li><a href="global.html#createFormFieldModel">createFormFieldModel</a></li><li><a href="global.html#createFormFieldsModel">createFormFieldsModel</a></li><li><a href="global.html#createPaymentForPartner">createPaymentForPartner</a></li><li><a href="global.html#exportAllPartnersToExcel">exportAllPartnersToExcel</a></li><li><a href="global.html#exportPartnerToExcel">exportPartnerToExcel</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#formatDateForUI">formatDateForUI</a></li><li><a href="global.html#getActiveSeason">getActiveSeason</a></li><li><a href="global.html#getAllApprovedPartnersWithPayments">getAllApprovedPartnersWithPayments</a></li><li><a href="global.html#getAllPartnerPayments">getAllPartnerPayments</a></li><li><a href="global.html#getAllSeasons">getAllSeasons</a></li><li><a href="global.html#getApprovedPartners">getApprovedPartners</a></li><li><a href="global.html#getMostRecentPayment">getMostRecentPayment</a></li><li><a href="global.html#getPartnerPaymentHistory">getPartnerPaymentHistory</a></li><li><a href="global.html#getPartnerPaymentsByStatus">getPartnerPaymentsByStatus</a></li><li><a href="global.html#getPartnerPaymentsForSeason">getPartnerPaymentsForSeason</a></li><li><a href="global.html#getStatusClass">getStatusClass</a></li><li><a href="global.html#getStatusInfo">getStatusInfo</a></li><li><a href="global.html#getStatusText">getStatusText</a></li><li><a href="global.html#isValidSpanishIban">isValidSpanishIban</a></li><li><a href="global.html#listenPartnerPaymentForSeason">listenPartnerPaymentForSeason</a></li><li><a href="global.html#listenPartnerPaymentHistory">listenPartnerPaymentHistory</a></li><li><a href="global.html#maskIban">maskIban</a></li><li><a href="global.html#normalizePaymentDates">normalizePaymentDates</a></li><li><a href="global.html#processFile">processFile</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#showPopup">showPopup</a></li><li><a href="global.html#updatePartnerPayment">updatePartnerPayment</a></li><li><a href="global.html#useChangeTracker">useChangeTracker</a></li><li><a href="global.html#useEvents">useEvents</a></li><li><a href="global.html#useFetchUsers">useFetchUsers</a></li><li><a href="global.html#useGallery">useGallery</a></li><li><a href="global.html#usePointerAnimation">usePointerAnimation</a></li><li><a href="global.html#useSearchFilter">useSearchFilter</a></li><li><a href="global.html#useSlug">useSlug</a></li><li><a href="global.html#useSortItems">useSortItems</a></li><li><a href="global.html#useStaffMembers">useStaffMembers</a></li><li><a href="global.html#useTaggedImage">useTaggedImage</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#wait">wait</a></li><li><a href="global.html#withRetry">withRetry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Dec 03 2025 20:36:12 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

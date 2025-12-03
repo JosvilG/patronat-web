@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: pages/files/GalleryMain.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: pages/files/GalleryMain.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useEffect, useState, useMemo } from 'react'
+import useGallery from '../../hooks/useGallery'
+import useSortItems from '../../hooks/useSortItems'
+import useSearchFilter from '../../hooks/useSearchFilter'
+import DynamicCard from '../../components/Cards'
+import DynamicInput from '../../components/Inputs'
+import { useTranslation } from 'react-i18next'
+import Loader from '../../components/Loader'
+import PaginationControl from '../../components/Pagination'
+
+/**
+ * GalleryPage Component
+ *
+ * Displays a paginated gallery of images with search and sort functionality.
+ * Images can be filtered by name, description and tags, and sorted by date or name.
+ */
+const GalleryPage = () => {
+  // Get gallery images and loading state from custom hook
+  const { galleryImages, loadingGallery } = useGallery()
+  const { t } = useTranslation()
+  const [currentSortType, setCurrentSortType] = useState(null)
+
+  // Pagination configuration
+  const ITEMS_PER_PAGE = 20
+  const [currentPage, setCurrentPage] = useState(1)
+  const viewDictionary = 'pages.gallery'
+
+  /**
+   * Search filter hook configuration
+   * - searchFields: Properties to search in (name, description)
+   * - arrayFields: Array properties to search in (tags)
+   * - debounceTime: Time in ms to wait before filtering after user input
+   */
+  const {
+    searchQuery,
+    filteredItems: searchFilteredItems,
+    handleSearchChange,
+    updateItems: updateSearchItems,
+  } = useSearchFilter([], {
+    searchFields: ['name', 'description'],
+    arrayFields: ['tags'],
+    debounceTime: 300,
+  })
+
+  /**
+   * Sort hook configuration
+   * - dateField: Property to use for date sorting
+   * - nameField: Property to use for name sorting
+   * - locale: Locale for string comparison
+   */
+  const {
+    items: sortedImages,
+    sortItems,
+    updateItems: updateSortItems,
+  } = useSortItems([], {
+    dateField: 'createdAt',
+    nameField: 'name',
+    locale: 'es',
+  })
+
+  // Calculate total pages based on filtered/sorted images
+  const totalPages = useMemo(() => {
+    return Math.max(1, Math.ceil(sortedImages.length / ITEMS_PER_PAGE))
+  }, [sortedImages.length])
+
+  // Get current page items for rendering
+  const currentPageItems = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE
+    const endIndex = startIndex + ITEMS_PER_PAGE
+    return sortedImages.slice(startIndex, endIndex)
+  }, [sortedImages, currentPage])
+
+  // Reset to first page when search query changes
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery])
+
+  // Update search items when gallery images change
+  useEffect(() => {
+    if (galleryImages.length > 0) {
+      updateSearchItems(galleryImages)
+    }
+  }, [galleryImages, updateSearchItems])
+
+  // Apply sorting when search results or sort type changes
+  useEffect(() => {
+    if (currentSortType) {
+      const sorted = sortItems(currentSortType, searchFilteredItems)
+      updateSortItems(sorted)
+    } else {
+      updateSortItems(searchFilteredItems)
+    }
+  }, [searchFilteredItems, currentSortType, sortItems, updateSortItems])
+
+  /**
+   * Handle pagination page change
+   * @param {Event} event - The event object
+   * @param {number} page - The new page number
+   */
+  const handlePageChange = (event, page) => {
+    setCurrentPage(page)
+  }
+
+  return (
+    &lt;div className="container flex flex-col items-center px-[4%] pb-[4vh] mx-auto min-h-dvh sm:flex-none">
+      &lt;h1 className="mb-[4vh] text-center sm:t64b t40b">
+        {t(`${viewDictionary}.title`)}
+      &lt;/h1>
+
+      {/* Search and sort controls */}
+      &lt;div className="flex flex-col items-center gap-[3vh] mb-[5vh] md:flex-row md:gap-[3vw]">
+        {/* Search input */}
+        &lt;div className="w-full">
+          &lt;DynamicInput
+            name="search"
+            type="text"
+            textId={t(`${viewDictionary}.searchLabel`)}
+            placeholder={t(`${viewDictionary}.searchGallery`)}
+            value={searchQuery}
+            onChange={handleSearchChange}
+          />
+        &lt;/div>
+      &lt;/div>
+
+      {/* Loading indicator */}
+      &lt;Loader loading={loadingGallery}>&lt;/Loader>
+
+      {/* Gallery grid with responsive columns */}
+      &lt;div className="grid grid-cols-1 gap-[3vh] sm:grid-cols-2 lg:grid-cols-3 w-[92%] sm:max-w-none">
+        {currentPageItems.length > 0 ? (
+          currentPageItems.map((image) => (
+            &lt;div key={image.id} className="cursor-pointer">
+              &lt;DynamicCard
+                type="gallery"
+                title={image.name}
+                description={image.description}
+                date={
+                  image.createdAt?.toDate()?.toLocaleDateString('es-ES', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric',
+                  }) || ''
+                }
+                imageUrl={image.url}
+                tags={image.tags}
+              />
+            &lt;/div>
+          ))
+        ) : (
+          // No results message when filtered items are empty
+          &lt;div className="col-span-3 py-[3vh] text-center">
+            &lt;p className="t16r">{t(`${viewDictionary}.noImagesFound`)}&lt;/p>
+          &lt;/div>
+        )}
+      &lt;/div>
+
+      {/* Pagination controls */}
+      &lt;PaginationControl
+        page={currentPage}
+        count={totalPages}
+        totalItems={sortedImages.length}
+        itemsPerPage={ITEMS_PER_PAGE}
+        onChange={handlePageChange}
+        itemName="imágenes"
+        size="large"
+        className="my-[5vh]"
+      />
+    &lt;/div>
+  )
+}
+
+export default GalleryPage
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#DynamicButton">DynamicButton</a></li><li><a href="global.html#DynamicInput">DynamicInput</a></li><li><a href="global.html#GalleryPage">GalleryPage</a></li><li><a href="global.html#PaginationControl">PaginationControl</a></li><li><a href="global.html#UploadFileForm">UploadFileForm</a></li><li><a href="global.html#appendSheetFromData">appendSheetFromData</a></li><li><a href="global.html#convertToWebP">convertToWebP</a></li><li><a href="global.html#createCustomFormModel">createCustomFormModel</a></li><li><a href="global.html#createFormFieldModel">createFormFieldModel</a></li><li><a href="global.html#createFormFieldsModel">createFormFieldsModel</a></li><li><a href="global.html#createPaymentForPartner">createPaymentForPartner</a></li><li><a href="global.html#exportAllPartnersToExcel">exportAllPartnersToExcel</a></li><li><a href="global.html#exportPartnerToExcel">exportPartnerToExcel</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#formatDateForUI">formatDateForUI</a></li><li><a href="global.html#getActiveSeason">getActiveSeason</a></li><li><a href="global.html#getAllApprovedPartnersWithPayments">getAllApprovedPartnersWithPayments</a></li><li><a href="global.html#getAllPartnerPayments">getAllPartnerPayments</a></li><li><a href="global.html#getAllSeasons">getAllSeasons</a></li><li><a href="global.html#getApprovedPartners">getApprovedPartners</a></li><li><a href="global.html#getMostRecentPayment">getMostRecentPayment</a></li><li><a href="global.html#getPartnerPaymentHistory">getPartnerPaymentHistory</a></li><li><a href="global.html#getPartnerPaymentsByStatus">getPartnerPaymentsByStatus</a></li><li><a href="global.html#getPartnerPaymentsForSeason">getPartnerPaymentsForSeason</a></li><li><a href="global.html#getStatusClass">getStatusClass</a></li><li><a href="global.html#getStatusInfo">getStatusInfo</a></li><li><a href="global.html#getStatusText">getStatusText</a></li><li><a href="global.html#isValidSpanishIban">isValidSpanishIban</a></li><li><a href="global.html#listenPartnerPaymentForSeason">listenPartnerPaymentForSeason</a></li><li><a href="global.html#listenPartnerPaymentHistory">listenPartnerPaymentHistory</a></li><li><a href="global.html#maskIban">maskIban</a></li><li><a href="global.html#normalizePaymentDates">normalizePaymentDates</a></li><li><a href="global.html#processFile">processFile</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#showPopup">showPopup</a></li><li><a href="global.html#updatePartnerPayment">updatePartnerPayment</a></li><li><a href="global.html#useChangeTracker">useChangeTracker</a></li><li><a href="global.html#useEvents">useEvents</a></li><li><a href="global.html#useFetchUsers">useFetchUsers</a></li><li><a href="global.html#useGallery">useGallery</a></li><li><a href="global.html#usePointerAnimation">usePointerAnimation</a></li><li><a href="global.html#useSearchFilter">useSearchFilter</a></li><li><a href="global.html#useSlug">useSlug</a></li><li><a href="global.html#useSortItems">useSortItems</a></li><li><a href="global.html#useStaffMembers">useStaffMembers</a></li><li><a href="global.html#useTaggedImage">useTaggedImage</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#wait">wait</a></li><li><a href="global.html#withRetry">withRetry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Dec 03 2025 20:36:12 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

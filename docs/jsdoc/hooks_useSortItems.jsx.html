@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: hooks/useSortItems.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: hooks/useSortItems.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState, useCallback } from 'react'
+
+/**
+ * Custom hook for sorting collections of items
+ * @param {Array} initialItems - Initial collection of items
+ * @param {Object} options - Optional configuration options
+ * @returns {Object} - State and methods for sorting items
+ */
+const useSortItems = (initialItems = [], options = {}) => {
+  const [items, setItems] = useState(initialItems)
+  const [currentSortType, setCurrentSortType] = useState(null)
+
+  // Default configuration for date sorting
+  const {
+    dateField = 'createdAt', // Default date field
+    nameField = 'name', // Default name field
+    locale = 'es', // Regional configuration for text sorting
+    sensitivity = 'base', // Sensitivity for string comparison (ignores accents)
+  } = options
+
+  /**
+   * Sorts items according to the specified criteria
+   * @param {string} sortType - Type of sorting (dateAsc, dateDesc, nameAsc, nameDesc)
+   * @param {Array} itemsToSort - Items to sort (optional, uses internal state if not provided)
+   * @returns {Array} - Sorted items
+   */
+  const sortItems = useCallback(
+    (sortType, itemsToSort = null) => {
+      // If there's no valid sort type, return items without changes
+      if (!sortType) return itemsToSort || items
+
+      // Use provided items or items from state
+      const elementsToSort = itemsToSort ? [...itemsToSort] : [...items]
+
+      let sorted = []
+      switch (sortType) {
+        case 'dateAsc':
+          sorted = elementsToSort.sort((a, b) => {
+            if (!a[dateField] || !b[dateField]) return 0
+            // If date is a Firestore object, use toDate()
+            const dateA =
+              typeof a[dateField].toDate === 'function'
+                ? a[dateField].toDate()
+                : a[dateField]
+            const dateB =
+              typeof b[dateField].toDate === 'function'
+                ? b[dateField].toDate()
+                : b[dateField]
+            return dateA - dateB
+          })
+          break
+
+        case 'dateDesc':
+          sorted = elementsToSort.sort((a, b) => {
+            if (!a[dateField] || !b[dateField]) return 0
+            // If date is a Firestore object, use toDate()
+            const dateA =
+              typeof a[dateField].toDate === 'function'
+                ? a[dateField].toDate()
+                : a[dateField]
+            const dateB =
+              typeof b[dateField].toDate === 'function'
+                ? b[dateField].toDate()
+                : b[dateField]
+            return dateB - dateA
+          })
+          break
+
+        case 'nameAsc':
+          sorted = elementsToSort.sort((a, b) =>
+            (a[nameField] || '').localeCompare(b[nameField] || '', locale, {
+              sensitivity,
+            })
+          )
+          break
+
+        case 'nameDesc':
+          sorted = elementsToSort.sort((a, b) =>
+            (b[nameField] || '').localeCompare(a[nameField] || '', locale, {
+              sensitivity,
+            })
+          )
+          break
+
+        default:
+          sorted = elementsToSort
+      }
+
+      // If external items were provided, just return the result
+      // If not, update the internal state
+      if (itemsToSort) {
+        return sorted
+      } else {
+        setItems(sorted)
+        setCurrentSortType(sortType)
+        return sorted
+      }
+    },
+    [items, dateField, nameField, locale, sensitivity]
+  )
+
+  /**
+   * Updates items and maintains current sorting if it exists
+   * @param {Array} newItems - New items to set
+   */
+  const updateItems = useCallback(
+    (newItems) => {
+      if (currentSortType) {
+        // If there's a current sort type, maintain the sorting
+        const sorted = sortItems(currentSortType, newItems)
+        setItems(sorted)
+      } else {
+        // If there's no current sorting, simply update the items
+        setItems(newItems)
+      }
+    },
+    [currentSortType, sortItems]
+  )
+
+  return {
+    items, // Current sorted items
+    sortItems, // Function to sort manually
+    handleSortChange: (event) => {
+      const sortType = event?.target?.value || event?.value
+      if (sortType) sortItems(sortType)
+    },
+    currentSortType, // Current sort type
+    updateItems, // We correctly export this function
+  }
+}
+
+export default useSortItems
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#DynamicButton">DynamicButton</a></li><li><a href="global.html#DynamicInput">DynamicInput</a></li><li><a href="global.html#GalleryPage">GalleryPage</a></li><li><a href="global.html#PaginationControl">PaginationControl</a></li><li><a href="global.html#UploadFileForm">UploadFileForm</a></li><li><a href="global.html#appendSheetFromData">appendSheetFromData</a></li><li><a href="global.html#convertToWebP">convertToWebP</a></li><li><a href="global.html#createCustomFormModel">createCustomFormModel</a></li><li><a href="global.html#createFormFieldModel">createFormFieldModel</a></li><li><a href="global.html#createFormFieldsModel">createFormFieldsModel</a></li><li><a href="global.html#createPaymentForPartner">createPaymentForPartner</a></li><li><a href="global.html#exportAllPartnersToExcel">exportAllPartnersToExcel</a></li><li><a href="global.html#exportPartnerToExcel">exportPartnerToExcel</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#formatDateForUI">formatDateForUI</a></li><li><a href="global.html#getActiveSeason">getActiveSeason</a></li><li><a href="global.html#getAllApprovedPartnersWithPayments">getAllApprovedPartnersWithPayments</a></li><li><a href="global.html#getAllPartnerPayments">getAllPartnerPayments</a></li><li><a href="global.html#getAllSeasons">getAllSeasons</a></li><li><a href="global.html#getApprovedPartners">getApprovedPartners</a></li><li><a href="global.html#getMostRecentPayment">getMostRecentPayment</a></li><li><a href="global.html#getPartnerPaymentHistory">getPartnerPaymentHistory</a></li><li><a href="global.html#getPartnerPaymentsByStatus">getPartnerPaymentsByStatus</a></li><li><a href="global.html#getPartnerPaymentsForSeason">getPartnerPaymentsForSeason</a></li><li><a href="global.html#getStatusClass">getStatusClass</a></li><li><a href="global.html#getStatusInfo">getStatusInfo</a></li><li><a href="global.html#getStatusText">getStatusText</a></li><li><a href="global.html#isValidSpanishIban">isValidSpanishIban</a></li><li><a href="global.html#listenPartnerPaymentForSeason">listenPartnerPaymentForSeason</a></li><li><a href="global.html#listenPartnerPaymentHistory">listenPartnerPaymentHistory</a></li><li><a href="global.html#maskIban">maskIban</a></li><li><a href="global.html#normalizePaymentDates">normalizePaymentDates</a></li><li><a href="global.html#processFile">processFile</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#showPopup">showPopup</a></li><li><a href="global.html#updatePartnerPayment">updatePartnerPayment</a></li><li><a href="global.html#useChangeTracker">useChangeTracker</a></li><li><a href="global.html#useEvents">useEvents</a></li><li><a href="global.html#useFetchUsers">useFetchUsers</a></li><li><a href="global.html#useGallery">useGallery</a></li><li><a href="global.html#usePointerAnimation">usePointerAnimation</a></li><li><a href="global.html#useSearchFilter">useSearchFilter</a></li><li><a href="global.html#useSlug">useSlug</a></li><li><a href="global.html#useSortItems">useSortItems</a></li><li><a href="global.html#useStaffMembers">useStaffMembers</a></li><li><a href="global.html#useTaggedImage">useTaggedImage</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#wait">wait</a></li><li><a href="global.html#withRetry">withRetry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Dec 03 2025 20:36:12 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

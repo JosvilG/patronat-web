@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Inputs.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Inputs.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React, { useState, useCallback } from 'react'
+import DOMPurify from 'dompurify'
+import { Input } from '@mui/base'
+import { useTranslation } from 'react-i18next'
+import TitleIcon from '@mui/icons-material/Title'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
+import ExpandLessIcon from '@mui/icons-material/ExpandLess'
+import NumbersIcon from '@mui/icons-material/Numbers'
+import NoteAddIcon from '@mui/icons-material/NoteAdd'
+import EmailIcon from '@mui/icons-material/Email'
+import PhoneIcon from '@mui/icons-material/Phone'
+import AccountCircleIcon from '@mui/icons-material/AccountCircle'
+import BrandingWatermarkIcon from '@mui/icons-material/BrandingWatermark'
+
+/**
+ * Elimina etiquetas HTML y atributos peligrosos antes de propagar el nuevo valor.
+ * @param {string} value
+ * @returns {string}
+ */
+const sanitizeInput = (value) => {
+  const clean = DOMPurify.sanitize(value, {
+    ALLOWED_TAGS: [],
+    ALLOWED_ATTR: [],
+  })
+  return clean
+}
+
+/**
+ * Campo de formulario reutilizable que cambia su representación según el tipo solicitado.
+ *
+ * @param {Object} props - Configuración del campo.
+ * @param {string} props.name - Nombre de formulario.
+ * @param {string} [props.textId] - Clave de traducción para etiquetas y placeholders.
+ * @param {string} props.type - Tipo de input (text, select, checkbox, document, etc).
+ * @param {Array&lt;{label: string, value: string}>} [props.options] - Opciones para selects personalizados.
+ * @param {Function} [props.onChange] - Callback que recibe los cambios sanitizados.
+ * @returns {JSX.Element|null}
+ */
+const DynamicInput = ({
+  name,
+  textId,
+  type,
+  options,
+  onChange,
+  ...restProps
+}) => {
+  const { t } = useTranslation()
+  const [selectedOption, setSelectedOption] = useState(null)
+  const [isOpen, setIsOpen] = useState(false)
+
+  const translatedLabel = textId ? t(textId) : ''
+  const translatedPlaceholder = textId ? t(textId) : ''
+  const shouldShowLabel = Boolean(textId &amp;&amp; textId.trim())
+
+  const handleChange = useCallback(
+    (e) => {
+      if (e.target.type === 'checkbox' || e.target.type === 'radio') {
+        onChange &amp;&amp;
+          onChange({
+            target: {
+              name: e.target.name,
+              value: e.target.checked,
+            },
+          })
+        return
+      }
+
+      let val = e.target.value
+      val = sanitizeInput(val)
+      if (restProps.maxLength &amp;&amp; val.length > restProps.maxLength) {
+        val = val.slice(0, restProps.maxLength)
+      }
+      onChange &amp;&amp; onChange({ target: { name: e.target.name, value: val } })
+    },
+    [onChange, restProps.maxLength]
+  )
+
+  const handleSelectOption = (option) => {
+    const cleanValue = sanitizeInput(option.value)
+    setSelectedOption(option)
+    setIsOpen(false)
+    onChange &amp;&amp; onChange({ target: { name, value: cleanValue } })
+  }
+
+  const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg']
+  const maxSize = 5 * 1024 * 1024
+  const handleFileChange = (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (!allowedTypes.includes(file.type)) {
+      alert(t('components.inputs.fileTypeError'))
+      return
+    }
+    if (file.size > maxSize) {
+      alert(t('components.inputs.fileSizeError', { size: '5MB' }))
+      return
+    }
+
+    onChange &amp;&amp;
+      onChange({
+        target: {
+          name: e.target.name,
+          value: file,
+          files: e.target.files,
+        },
+      })
+  }
+
+  /**
+   * Renderiza el selector personalizado que simula un componente nativo accesible.
+   * @returns {JSX.Element}
+   */
+  const renderCustomSelect = () => (
+    &lt;div className="my-4">
+      {shouldShowLabel &amp;&amp; (
+        &lt;label htmlFor={name} className="block mb-2 t16r">
+          {translatedLabel}
+        &lt;/label>
+      )}
+      &lt;div className="relative">
+        &lt;div
+          className="w-full max-w-xs sm:max-w-md h-[54px] px-4 py-2 text-[#696969] backdrop-blur-lg backdrop-saturate-[180%] bg-[rgba(255,255,255,0.75)] rounded-xl cursor-pointer flex justify-between items-center"
+          role="button"
+          tabIndex={0}
+          onClick={() => setIsOpen(!isOpen)}
+        >
+          &lt;span className="text-[#696969] truncate pr-2">
+            {selectedOption ? t(selectedOption.label) : translatedPlaceholder}
+          &lt;/span>
+          {!isOpen ? (
+            &lt;ExpandMoreIcon fontSize="large" className="flex-shrink-0" />
+          ) : (
+            &lt;ExpandLessIcon fontSize="large" className="flex-shrink-0" />
+          )}
+        &lt;/div>
+        {isOpen &amp;&amp; (
+          &lt;ul className="absolute flex flex-col top-[58px] w-full left-0 right-0 z-10 rounded-[24px] max-h-60 overflow-y-auto">
+            {options.map((opt, idx) => (
+              &lt;li
+                key={idx}
+                onClick={() => handleSelectOption(opt)}
+                className="px-4 py-2 w-full mb-1 text-black backdrop-blur-lg backdrop-saturate-[180%] bg-[rgba(255,255,255,0.75)] rounded-xl hover:cursor-pointer truncate"
+                role="option"
+              >
+                {t(opt.label)}
+              &lt;/li>
+            ))}
+          &lt;/ul>
+        )}
+      &lt;/div>
+    &lt;/div>
+  )
+
+  const renderInput = () => {
+    switch (type) {
+      case 'text':
+      case 'users':
+      case 'email':
+      case 'password':
+      case 'number':
+      case 'dni':
+      case 'phone':
+        return (
+          &lt;div className="w-full max-w-xs sm:max-w-md">
+            {shouldShowLabel &amp;&amp; (
+              &lt;label htmlFor={name} className="block mb-2 t16r">
+                {translatedLabel}
+              &lt;/label>
+            )}
+            &lt;div
+              className={`my-4 flex ${
+                type === 'number' ? 'w-full max-w-[200px]' : 'w-full'
+              } h-[54px] items-center backdrop-blur-lg backdrop-saturate-[180%] bg-[rgba(255,255,255,0.75)] rounded-xl`}
+            >
+              &lt;input
+                autoComplete={'off'}
+                name={name}
+                type={
+                  type === 'password'
+                    ? 'password'
+                    : type === 'users'
+                      ? 'text'
+                      : type
+                }
+                placeholder={
+                  type === 'password'
+                    ? t('components.inputs.enterPassword')
+                    : translatedPlaceholder
+                }
+                onChange={handleChange}
+                {...restProps}
+                className={`t16l ${
+                  type === 'number'
+                    ? 'w-[calc(100%-40px)]'
+                    : 'w-[calc(100%-40px)]'
+                } px-4 py-2 focus:outline-none bg-transparent`}
+              />
+              &lt;div className="flex justify-center flex-shrink-0 w-10">
+                {
+                  {
+                    text: (
+                      &lt;TitleIcon fontSize="large" className="text-[#696969]" />
+                    ),
+                    users: (
+                      &lt;AccountCircleIcon
+                        fontSize="large"
+                        className="text-[#696969]"
+                      />
+                    ),
+                    email: (
+                      &lt;EmailIcon fontSize="large" className="text-[#696969]" />
+                    ),
+                    password: (
+                      &lt;VisibilityIcon
+                        fontSize="large"
+                        className="text-[#696969]"
+                      />
+                    ),
+                    number: &lt;NumbersIcon className="text-[#696969]" />,
+                    dni: (
+                      &lt;BrandingWatermarkIcon
+                        fontSize="large"
+                        className="text-[#696969]"
+                      />
+                    ),
+                    phone: (
+                      &lt;PhoneIcon fontSize="large" className="text-[#696969]" />
+                    ),
+                  }[type]
+                }
+              &lt;/div>
+            &lt;/div>
+          &lt;/div>
+        )
+
+      case 'checkbox':
+      case 'radio':
+        return (
+          &lt;div className="max-w-full w-fit">
+            {shouldShowLabel &amp;&amp; (
+              &lt;label htmlFor={name} className="block mb-2 t16r">
+                {translatedLabel}
+              &lt;/label>
+            )}
+            &lt;div
+              className="flex items-center w-fit max-w-full h-[54px] px-4 py-2 cursor-pointer backdrop-blur-lg backdrop-saturate-[180%] bg-[rgba(255,255,255,0.75)] rounded-xl"
+              onClick={() => {
+                const checkbox = document.getElementById(name)
+                const newCheckedState = !checkbox?.checked
+                if (checkbox) checkbox.checked = newCheckedState
+                onChange &amp;&amp;
+                  onChange({
+                    target: {
+                      name: name,
+                      checked: newCheckedState,
+                      value: newCheckedState,
+                      type: type,
+                    },
+                  })
+              }}
+            >
+              &lt;input
+                type={type}
+                id={name}
+                name={name}
+                onChange={handleChange}
+                {...restProps}
+                className="hidden peer"
+              />
+              &lt;div
+                className={`w-[34px] h-[34px] flex-shrink-0 mr-3 border-4 border-[#696969] rounded-${
+                  type === 'checkbox' ? 'lg' : 'full'
+                } transition-colors duration-200 ease-in-out peer-checked:bg-[#696969] peer-checked:border-[#696969]`}
+              />
+              &lt;span className="truncate select-none t16r">
+                {translatedLabel}
+              &lt;/span>
+            &lt;/div>
+          &lt;/div>
+        )
+
+      case 'textarea':
+        return (
+          &lt;div className="w-full max-w-xs sm:max-w-md">
+            {shouldShowLabel &amp;&amp; (
+              &lt;label htmlFor={name} className="block mb-2 t16r">
+                {translatedLabel}
+              &lt;/label>
+            )}
+            &lt;textarea
+              name={name}
+              placeholder={translatedPlaceholder}
+              onChange={handleChange}
+              {...restProps}
+              className="t16l w-full min-h-[54px] px-4 py-2 backdrop-blur-lg backdrop-saturate-[180%] bg-[rgba(255,255,255,0.75)] rounded-xl"
+            />
+          &lt;/div>
+        )
+
+      case 'select':
+        return renderCustomSelect()
+
+      case 'date':
+      case 'time':
+        return (
+          &lt;div className="w-full max-w-[200px]">
+            {shouldShowLabel &amp;&amp; (
+              &lt;label htmlFor={name} className="block mb-2 t16r">
+                {translatedLabel}
+              &lt;/label>
+            )}
+            &lt;input
+              type={type}
+              name={name}
+              onChange={handleChange}
+              {...restProps}
+              className="t16l w-full h-[54px] px-4 py-2 backdrop-blur-lg backdrop-saturate-[180%] bg-[rgba(255,255,255,0.75)] rounded-xl appearance-none"
+            />
+          &lt;/div>
+        )
+
+      case 'otp':
+        return (
+          &lt;div>
+            {shouldShowLabel &amp;&amp; (
+              &lt;label htmlFor={name} className="block mb-2 t16r">
+                {translatedLabel}
+              &lt;/label>
+            )}
+            &lt;div className="flex flex-wrap space-x-2 gap-y-2">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                &lt;input
+                  key={idx}
+                  type="text"
+                  maxLength={1}
+                  name={`${name}[${idx}]`}
+                  onChange={handleChange}
+                  {...restProps}
+                  className="t24s w-[calc(16.666%-4px)] min-w-[40px] max-w-[54px] aspect-square px-0 py-0 backdrop-blur-lg backdrop-saturate-[180%] bg-[rgba(255,255,255,0.75)] rounded-xl text-center"
+                />
+              ))}
+            &lt;/div>
+          &lt;/div>
+        )
+
+      case 'document':
+        return (
+          &lt;div className="w-full max-w-xs sm:max-w-md">
+            {shouldShowLabel &amp;&amp; (
+              &lt;label htmlFor={name} className="block mb-2 t16r">
+                {translatedLabel}
+              &lt;/label>
+            )}
+            &lt;div>
+              &lt;label
+                htmlFor={name}
+                className="flex content-center justify-between w-full h-[54px] px-4 py-2 cursor-pointer backdrop-blur-lg backdrop-saturate-[180%] bg-[rgba(255,255,255,0.75)] rounded-xl"
+              >
+                &lt;span className="flex flex-col justify-center mr-2 overflow-hidden truncate t16r">
+                  {t('components.inputs.addDocument')}
+                &lt;/span>
+                &lt;NoteAddIcon fontSize="large" className="flex-shrink-0" />
+              &lt;/label>
+              &lt;input
+                id={name}
+                type="file"
+                name={name}
+                accept={restProps.accept}
+                onChange={handleFileChange}
+                className="hidden"
+                {...restProps}
+              />
+            &lt;/div>
+          &lt;/div>
+        )
+
+      default:
+        return (
+          &lt;Input
+            name={name}
+            placeholder={translatedPlaceholder}
+            onChange={handleChange}
+            {...restProps}
+            className="w-full px-4 py-2 border rounded-lg"
+          />
+        )
+    }
+  }
+
+  return renderInput()
+}
+
+export default DynamicInput
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#DynamicButton">DynamicButton</a></li><li><a href="global.html#DynamicInput">DynamicInput</a></li><li><a href="global.html#GalleryPage">GalleryPage</a></li><li><a href="global.html#PaginationControl">PaginationControl</a></li><li><a href="global.html#UploadFileForm">UploadFileForm</a></li><li><a href="global.html#appendSheetFromData">appendSheetFromData</a></li><li><a href="global.html#convertToWebP">convertToWebP</a></li><li><a href="global.html#createCustomFormModel">createCustomFormModel</a></li><li><a href="global.html#createFormFieldModel">createFormFieldModel</a></li><li><a href="global.html#createFormFieldsModel">createFormFieldsModel</a></li><li><a href="global.html#createPaymentForPartner">createPaymentForPartner</a></li><li><a href="global.html#exportAllPartnersToExcel">exportAllPartnersToExcel</a></li><li><a href="global.html#exportPartnerToExcel">exportPartnerToExcel</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#formatDateForUI">formatDateForUI</a></li><li><a href="global.html#getActiveSeason">getActiveSeason</a></li><li><a href="global.html#getAllApprovedPartnersWithPayments">getAllApprovedPartnersWithPayments</a></li><li><a href="global.html#getAllPartnerPayments">getAllPartnerPayments</a></li><li><a href="global.html#getAllSeasons">getAllSeasons</a></li><li><a href="global.html#getApprovedPartners">getApprovedPartners</a></li><li><a href="global.html#getMostRecentPayment">getMostRecentPayment</a></li><li><a href="global.html#getPartnerPaymentHistory">getPartnerPaymentHistory</a></li><li><a href="global.html#getPartnerPaymentsByStatus">getPartnerPaymentsByStatus</a></li><li><a href="global.html#getPartnerPaymentsForSeason">getPartnerPaymentsForSeason</a></li><li><a href="global.html#getStatusClass">getStatusClass</a></li><li><a href="global.html#getStatusInfo">getStatusInfo</a></li><li><a href="global.html#getStatusText">getStatusText</a></li><li><a href="global.html#isValidSpanishIban">isValidSpanishIban</a></li><li><a href="global.html#listenPartnerPaymentForSeason">listenPartnerPaymentForSeason</a></li><li><a href="global.html#listenPartnerPaymentHistory">listenPartnerPaymentHistory</a></li><li><a href="global.html#maskIban">maskIban</a></li><li><a href="global.html#normalizePaymentDates">normalizePaymentDates</a></li><li><a href="global.html#processFile">processFile</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#showPopup">showPopup</a></li><li><a href="global.html#updatePartnerPayment">updatePartnerPayment</a></li><li><a href="global.html#useChangeTracker">useChangeTracker</a></li><li><a href="global.html#useEvents">useEvents</a></li><li><a href="global.html#useFetchUsers">useFetchUsers</a></li><li><a href="global.html#useGallery">useGallery</a></li><li><a href="global.html#usePointerAnimation">usePointerAnimation</a></li><li><a href="global.html#useSearchFilter">useSearchFilter</a></li><li><a href="global.html#useSlug">useSlug</a></li><li><a href="global.html#useSortItems">useSortItems</a></li><li><a href="global.html#useStaffMembers">useStaffMembers</a></li><li><a href="global.html#useTaggedImage">useTaggedImage</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#wait">wait</a></li><li><a href="global.html#withRetry">withRetry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Dec 03 2025 20:36:12 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

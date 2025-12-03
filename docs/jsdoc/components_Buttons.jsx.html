@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: components/Buttons.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: components/Buttons.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import React from 'react'
+import PropTypes from 'prop-types'
+import { useTranslation } from 'react-i18next'
+import DeleteIcon from '@mui/icons-material/Delete'
+import EditIcon from '@mui/icons-material/Edit'
+import VisibilityIcon from '@mui/icons-material/Visibility'
+import SaveIcon from '@mui/icons-material/Save'
+import CancelIcon from '@mui/icons-material/Cancel'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import AddCircleIcon from '@mui/icons-material/AddCircle'
+import LoopIcon from '@mui/icons-material/Loop'
+import SendIcon from '@mui/icons-material/Send'
+import DownloadIcon from '@mui/icons-material/Download'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
+import NoAccountsIcon from '@mui/icons-material/NoAccounts'
+import EuroIcon from '@mui/icons-material/Euro'
+import DoneAllIcon from '@mui/icons-material/DoneAll'
+import PlayArrowIcon from '@mui/icons-material/PlayArrow'
+import PauseIcon from '@mui/icons-material/Pause'
+import ScoreboardIcon from '@mui/icons-material/Scoreboard'
+
+/**
+ * Renderiza un botón dinámico que adapta tamaño, estado y tipo según las props recibidas.
+ *
+ * @param {Object} props - Propiedades de configuración del botón.
+ * @param {string} [props.size='medium'] - Tamaño lógico del botón.
+ * @param {string} [props.state='normal'] - Estado visual (normal, disabled, highlighted).
+ * @param {string} [props.type] - Tipo semántico que determina iconos y estilos.
+ * @param {string} [props.textId] - Clave de traducción para mostrar texto localizado.
+ * @param {React.ReactNode} [props.children] - Contenido alternativo cuando no se usa `textId`.
+ * @returns {JSX.Element} Un botón estilizado listo para reutilizar.
+ */
+const DynamicButton = ({ size, state, type, textId, children, ...props }) => {
+  const { t } = useTranslation()
+
+  /**
+   * Relaciona el tamaño lógico con las clases utilitarias.
+   * @param {string} sizeValue
+   * @returns {string}
+   */
+  const getSizeClasses = (size) => {
+    switch (size) {
+      case 'large':
+        return 'w-[400px] h-[56px]'
+      case 'medium':
+        return 'w-[250px] h-[56px]'
+      case 'small':
+        return 'w-[150px] h-[41px]'
+      case 'x-small':
+        return 'w-[41px] h-[41px]'
+      default:
+        return 'w-[250px]'
+    }
+  }
+
+  /**
+   * Determina los estilos base según el estado visual.
+   * @param {string} stateValue
+   * @returns {string}
+   */
+  const getStateClasses = (state) => {
+    switch (state) {
+      case 'normal':
+        return 'bg-[#3A3A3A] text-[#FFFFFF] hover:bg-[#696969] hover:text-[#3A3A3A]'
+      case 'disabled':
+        return 'bg-[rgba(91,91,91,0.53)] text-[rgba(80,79,80,0.31)] cursor-not-allowed'
+      case 'highlighted':
+        return 'bg-[#696969] text-[#3A3A3A] hover:bg-[#3A3A3A] hover:text-[#FFFFFF]'
+      default:
+        return 'bg-[#3A3A3A] text-[#FFFFFF]'
+    }
+  }
+
+  /**
+   * Devuelve icono y clases para estados especiales (delete, save, etc).
+   * @param {string} typeValue
+   * @returns {{icon: React.ReactNode|null, classes?: string}}
+   */
+  const getTypeClasses = (type) => {
+    switch (type) {
+      case 'delete':
+        return {
+          icon: &lt;DeleteIcon />,
+          classes:
+            'bg-[#EB0E00] text-[#FFFFFF] hover:bg-[#E55C52] hover:text-[#FFFFFF]',
+        }
+      case 'edit':
+        return {
+          icon: &lt;EditIcon />,
+        }
+      case 'view':
+        return {
+          icon: &lt;VisibilityIcon />,
+        }
+      case 'save':
+        return {
+          icon: &lt;SaveIcon />,
+        }
+      case 'cancel':
+        return {
+          icon: &lt;CancelIcon />,
+        }
+      case 'confirm':
+        return {
+          icon: &lt;CheckCircleIcon />,
+        }
+      case 'add':
+        return {
+          icon: &lt;AddCircleIcon />,
+        }
+      case 'loading':
+        return {
+          icon: &lt;LoopIcon className="animate-spin" />,
+        }
+      case 'submit':
+        return {
+          icon: &lt;SendIcon />,
+        }
+      case 'download':
+        return {
+          icon: &lt;DownloadIcon />,
+        }
+      case 'personAdd':
+        return {
+          icon: &lt;PersonAddIcon />,
+        }
+
+      case 'personDown':
+        return {
+          icon: &lt;NoAccountsIcon />,
+        }
+
+      case 'payment':
+        return {
+          icon: &lt;EuroIcon />,
+        }
+
+      case 'done':
+        return {
+          icon: &lt;DoneAllIcon />,
+        }
+
+      case 'play':
+        return {
+          icon: &lt;PlayArrowIcon />,
+        }
+
+      case 'pause':
+        return {
+          icon: &lt;PauseIcon />,
+        }
+      case 'score':
+        return {
+          icon: &lt;ScoreboardIcon />,
+        }
+      default:
+        return { icon: null, classes: '' }
+    }
+  }
+
+  const sizeClasses = getSizeClasses(size)
+  const stateClasses = getStateClasses(state)
+  const { icon, classes: typeClasses } = getTypeClasses(type)
+
+  const transitionClasses =
+    'transition-all duration-300 ease-in-out transform hover:scale-[1.02] active:scale-[0.98]'
+
+  return (
+    &lt;button
+      className={`t16s flex justify-center items-center ${sizeClasses} ${stateClasses} px-4 py-2 rounded-[60px] ${props.className} ${typeClasses} ${transitionClasses}`}
+      disabled={state === 'disabled' || props.disabled}
+      {...props}
+    >
+      {textId ? t(textId) : icon || children || ''}
+    &lt;/button>
+  )
+}
+
+DynamicButton.propTypes = {
+  size: PropTypes.string,
+  state: PropTypes.string,
+  type: PropTypes.string,
+  textId: PropTypes.string,
+  children: PropTypes.node,
+  className: PropTypes.string,
+  disabled: PropTypes.bool,
+}
+
+export default DynamicButton
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#DynamicButton">DynamicButton</a></li><li><a href="global.html#DynamicInput">DynamicInput</a></li><li><a href="global.html#GalleryPage">GalleryPage</a></li><li><a href="global.html#PaginationControl">PaginationControl</a></li><li><a href="global.html#UploadFileForm">UploadFileForm</a></li><li><a href="global.html#appendSheetFromData">appendSheetFromData</a></li><li><a href="global.html#convertToWebP">convertToWebP</a></li><li><a href="global.html#createCustomFormModel">createCustomFormModel</a></li><li><a href="global.html#createFormFieldModel">createFormFieldModel</a></li><li><a href="global.html#createFormFieldsModel">createFormFieldsModel</a></li><li><a href="global.html#createPaymentForPartner">createPaymentForPartner</a></li><li><a href="global.html#exportAllPartnersToExcel">exportAllPartnersToExcel</a></li><li><a href="global.html#exportPartnerToExcel">exportPartnerToExcel</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#formatDateForUI">formatDateForUI</a></li><li><a href="global.html#getActiveSeason">getActiveSeason</a></li><li><a href="global.html#getAllApprovedPartnersWithPayments">getAllApprovedPartnersWithPayments</a></li><li><a href="global.html#getAllPartnerPayments">getAllPartnerPayments</a></li><li><a href="global.html#getAllSeasons">getAllSeasons</a></li><li><a href="global.html#getApprovedPartners">getApprovedPartners</a></li><li><a href="global.html#getMostRecentPayment">getMostRecentPayment</a></li><li><a href="global.html#getPartnerPaymentHistory">getPartnerPaymentHistory</a></li><li><a href="global.html#getPartnerPaymentsByStatus">getPartnerPaymentsByStatus</a></li><li><a href="global.html#getPartnerPaymentsForSeason">getPartnerPaymentsForSeason</a></li><li><a href="global.html#getStatusClass">getStatusClass</a></li><li><a href="global.html#getStatusInfo">getStatusInfo</a></li><li><a href="global.html#getStatusText">getStatusText</a></li><li><a href="global.html#isValidSpanishIban">isValidSpanishIban</a></li><li><a href="global.html#listenPartnerPaymentForSeason">listenPartnerPaymentForSeason</a></li><li><a href="global.html#listenPartnerPaymentHistory">listenPartnerPaymentHistory</a></li><li><a href="global.html#maskIban">maskIban</a></li><li><a href="global.html#normalizePaymentDates">normalizePaymentDates</a></li><li><a href="global.html#processFile">processFile</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#showPopup">showPopup</a></li><li><a href="global.html#updatePartnerPayment">updatePartnerPayment</a></li><li><a href="global.html#useChangeTracker">useChangeTracker</a></li><li><a href="global.html#useEvents">useEvents</a></li><li><a href="global.html#useFetchUsers">useFetchUsers</a></li><li><a href="global.html#useGallery">useGallery</a></li><li><a href="global.html#usePointerAnimation">usePointerAnimation</a></li><li><a href="global.html#useSearchFilter">useSearchFilter</a></li><li><a href="global.html#useSlug">useSlug</a></li><li><a href="global.html#useSortItems">useSortItems</a></li><li><a href="global.html#useStaffMembers">useStaffMembers</a></li><li><a href="global.html#useTaggedImage">useTaggedImage</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#wait">wait</a></li><li><a href="global.html#withRetry">withRetry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Dec 03 2025 20:36:12 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

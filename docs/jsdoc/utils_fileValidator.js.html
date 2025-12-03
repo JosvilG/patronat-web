@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: utils/fileValidator.js</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: utils/fileValidator.js</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import imageCompression from 'browser-image-compression'
+
+const viewDictionary = 'utils'
+
+/**
+ * @param {File} imageFile
+ * @returns {Promise&lt;File>}
+ */
+export const convertToWebP = async (imageFile) => {
+  try {
+    const options = {
+      maxSizeMB: 1,
+      maxWidthOrHeight: 1920,
+      useWebWorker: true,
+    }
+
+    const compressedFile = await imageCompression(imageFile, options)
+
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.readAsArrayBuffer(compressedFile)
+      reader.onload = () => {
+        const blob = new Blob([reader.result], { type: compressedFile.type })
+        const blobURL = URL.createObjectURL(blob)
+
+        const img = new Image()
+        img.src = blobURL
+
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          canvas.width = img.width
+          canvas.height = img.height
+
+          const ctx = canvas.getContext('2d')
+          ctx.drawImage(img, 0, 0)
+
+          canvas.toBlob(
+            (webpBlob) => {
+              // Limpiar URL
+              URL.revokeObjectURL(blobURL)
+
+              if (!webpBlob) {
+                resolve(imageFile)
+                return
+              }
+
+              const originalFileName =
+                imageFile.name.substring(0, imageFile.name.lastIndexOf('.')) ||
+                imageFile.name
+
+              const newFile = new File([webpBlob], `${originalFileName}.webp`, {
+                type: 'image/webp',
+              })
+
+              resolve(newFile)
+            },
+            'image/webp',
+            0.8 // Calidad 80%
+          )
+        }
+
+        img.onerror = () => {
+          URL.revokeObjectURL(blobURL)
+          resolve(imageFile) // Fallback al archivo original
+        }
+      }
+
+      reader.onerror = () => {
+        resolve(imageFile) // Fallback al archivo original
+      }
+    })
+  } catch (error) {
+    return imageFile
+  }
+}
+
+/**
+ * @param {File} file
+ * @param {Function} t
+ * @returns {String|null}
+ */
+export const validateFile = (file, t) => {
+  if (!file) return t(`${viewDictionary}.fileRelated`)
+
+  const allowedImageTypes = [
+    'image/png',
+    'image/jpeg',
+    'image/jpg',
+    'application/jpg',
+    'image/webp',
+  ]
+  const allowedPdfTypes = ['application/pdf']
+  const allowedTypes = [...allowedImageTypes, ...allowedPdfTypes]
+
+  if (!allowedTypes.includes(file.type)) {
+    return t(`${viewDictionary}.fileType`)
+  }
+
+  if (allowedImageTypes.includes(file.type)) {
+    const maxImageSize = 5 * 1024 * 1024
+    if (file.size > maxImageSize) {
+      return t(`${viewDictionary}.fileSize`)
+    }
+  } else if (allowedPdfTypes.includes(file.type)) {
+    const maxPdfSize = 25 * 1024 * 1024
+    if (file.size > maxPdfSize) {
+      return t(`${viewDictionary}.pdfFileSize`)
+    }
+  }
+
+  return null
+}
+
+/**
+ * @param {File} file
+ * @returns {Promise&lt;File>}
+ */
+export const processFile = async (file) => {
+  if (!file) return null
+
+  const imageTypes = ['image/png', 'image/jpeg', 'image/jpg', 'application/jpg']
+
+  if (imageTypes.includes(file.type)) {
+    const webpFile = await convertToWebP(file)
+    return webpFile
+  }
+
+  return file
+}
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Global</h3><ul><li><a href="global.html#DynamicButton">DynamicButton</a></li><li><a href="global.html#DynamicInput">DynamicInput</a></li><li><a href="global.html#GalleryPage">GalleryPage</a></li><li><a href="global.html#PaginationControl">PaginationControl</a></li><li><a href="global.html#UploadFileForm">UploadFileForm</a></li><li><a href="global.html#appendSheetFromData">appendSheetFromData</a></li><li><a href="global.html#convertToWebP">convertToWebP</a></li><li><a href="global.html#createCustomFormModel">createCustomFormModel</a></li><li><a href="global.html#createFormFieldModel">createFormFieldModel</a></li><li><a href="global.html#createFormFieldsModel">createFormFieldsModel</a></li><li><a href="global.html#createPaymentForPartner">createPaymentForPartner</a></li><li><a href="global.html#exportAllPartnersToExcel">exportAllPartnersToExcel</a></li><li><a href="global.html#exportPartnerToExcel">exportPartnerToExcel</a></li><li><a href="global.html#formatDate">formatDate</a></li><li><a href="global.html#formatDateForUI">formatDateForUI</a></li><li><a href="global.html#getActiveSeason">getActiveSeason</a></li><li><a href="global.html#getAllApprovedPartnersWithPayments">getAllApprovedPartnersWithPayments</a></li><li><a href="global.html#getAllPartnerPayments">getAllPartnerPayments</a></li><li><a href="global.html#getAllSeasons">getAllSeasons</a></li><li><a href="global.html#getApprovedPartners">getApprovedPartners</a></li><li><a href="global.html#getMostRecentPayment">getMostRecentPayment</a></li><li><a href="global.html#getPartnerPaymentHistory">getPartnerPaymentHistory</a></li><li><a href="global.html#getPartnerPaymentsByStatus">getPartnerPaymentsByStatus</a></li><li><a href="global.html#getPartnerPaymentsForSeason">getPartnerPaymentsForSeason</a></li><li><a href="global.html#getStatusClass">getStatusClass</a></li><li><a href="global.html#getStatusInfo">getStatusInfo</a></li><li><a href="global.html#getStatusText">getStatusText</a></li><li><a href="global.html#isValidSpanishIban">isValidSpanishIban</a></li><li><a href="global.html#listenPartnerPaymentForSeason">listenPartnerPaymentForSeason</a></li><li><a href="global.html#listenPartnerPaymentHistory">listenPartnerPaymentHistory</a></li><li><a href="global.html#maskIban">maskIban</a></li><li><a href="global.html#normalizePaymentDates">normalizePaymentDates</a></li><li><a href="global.html#processFile">processFile</a></li><li><a href="global.html#sanitizeInput">sanitizeInput</a></li><li><a href="global.html#showPopup">showPopup</a></li><li><a href="global.html#updatePartnerPayment">updatePartnerPayment</a></li><li><a href="global.html#useChangeTracker">useChangeTracker</a></li><li><a href="global.html#useEvents">useEvents</a></li><li><a href="global.html#useFetchUsers">useFetchUsers</a></li><li><a href="global.html#useGallery">useGallery</a></li><li><a href="global.html#usePointerAnimation">usePointerAnimation</a></li><li><a href="global.html#useSearchFilter">useSearchFilter</a></li><li><a href="global.html#useSlug">useSlug</a></li><li><a href="global.html#useSortItems">useSortItems</a></li><li><a href="global.html#useStaffMembers">useStaffMembers</a></li><li><a href="global.html#useTaggedImage">useTaggedImage</a></li><li><a href="global.html#validateFile">validateFile</a></li><li><a href="global.html#wait">wait</a></li><li><a href="global.html#withRetry">withRetry</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Wed Dec 03 2025 20:36:12 GMT+0100 (hora estándar de Europa central)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>

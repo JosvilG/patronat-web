@@ -1,0 +1,23 @@
+{
+  "source": {
+    "include": ["README.md", "src"],
+    "includePattern": "\\.(js|jsx)$",
+    "excludePattern": "(stories|__tests__)"
+  },
+  "plugins": ["plugins/markdown"],
+  "opts": {
+    "encoding": "utf8",
+    "destination": "./docs/jsdoc",
+    "recurse": true,
+    "verbose": true,
+    "readme": "./README.md"
+  },
+  "tags": {
+    "allowUnknownTags": false,
+    "dictionaries": ["jsdoc", "closure"]
+  },
+  "templates": {
+    "cleverLinks": true,
+    "monospaceLinks": true
+  }
+}
