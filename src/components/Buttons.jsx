@@ -73,8 +73,8 @@ const DynamicButton = ({ size, state, type, textId, children, ...props }) => {
 
   /**
    * Devuelve icono y clases para estados especiales (delete, save, etc).
-   * @param {string} typeValue
-   * @returns {{icon: React.ReactNode|null, classes?: string}}
+   * @param {string} type
+   * @returns {{icon: React.ReactNode|null, classes: (string|undefined)}}
    */
   const getTypeClasses = (type) => {
     switch (type) {

@@ -79,8 +79,8 @@ const appendSheetFromData = (workbook, sheetName, data = []) => {
  * @param {Object|null} activeSeason
  * @param {Object|null} payments
  * @param {Array<Object>} history
- * @param {(options: Object) => Promise<void>} showPopupFn
- * @param {(key: string, defaultValue?: string) => string} tFn
+ * @param {function(Object): Promise<void>} showPopupFn
+ * @param {function(string, string=): string} tFn
  * @param {string} viewDictionary
  * @returns {Promise<void>}
  */
@@ -230,10 +230,10 @@ export const exportPartnerToExcel = async (
  *
  * @param {Array<Object>} partners
  * @param {Object|null} activeSeason
- * @param {(partnerId: string, seasonYear: string|number) => Promise<Object|null>} getPartnerPaymentsForSeason
- * @param {(partnerId: string, seasonYear: string|number) => Promise<Array<Object>>} getPartnerPaymentHistory
- * @param {(options: Object) => Promise<void>} showPopupFn
- * @param {(key: string, defaultValue?: string) => string} tFn
+ * @param {function(string, (string|number)): Promise<Object|null>} getPartnerPaymentsForSeason
+ * @param {function(string, (string|number)): Promise<Array<Object>>} getPartnerPaymentHistory
+ * @param {function(Object): Promise<void>} showPopupFn
+ * @param {function(string, string=): string} tFn
  * @param {string} viewDictionary
  * @returns {Promise<void>}
  */

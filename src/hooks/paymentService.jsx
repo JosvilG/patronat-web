@@ -51,9 +51,9 @@ const withRetry = async (
  * Escucha en tiempo real los datos de pago de un socio para una temporada
  * @param {string} partnerId
  * @param {number} seasonYear
- * @param {(payment: Object|null) => void} onNext
- * @param {(error: Error) => void} [onError]
- * @returns {() => void} unsubscribe
+ * @param {function((Object|null)): void} onNext
+ * @param {function(Error): void} [onError]
+ * @returns {function(): void} unsubscribe
  **/
 export const listenPartnerPaymentForSeason = (
   partnerId,
@@ -88,9 +88,9 @@ export const listenPartnerPaymentForSeason = (
  * Escucha en tiempo real el historial de pagos de un socio (excluye la temporada activa)
  * @param {string} partnerId
  * @param {number} activeSeasonYear
- * @param {(history: Object[]) => void} onNext
- * @param {(error: Error) => void} [onError]
- * @returns {() => void} unsubscribe
+ * @param {function(Array<Object>): void} onNext
+ * @param {function(Error): void} [onError]
+ * @returns {function(): void} unsubscribe
  */
 export const listenPartnerPaymentHistory = (
   partnerId,

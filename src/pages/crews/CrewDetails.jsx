@@ -356,7 +356,7 @@ const CrewDetails = () => {
           createdCount > 0
             ? t(`${viewDictionary}.approvalWithGames`, { count: createdCount })
             : alreadyHadGames
-              ? t(`${viewDictionary}.approvalSuccess`) 
+              ? t(`${viewDictionary}.approvalSuccess`)
               : totalActiveGames === 0
                 ? t(`${viewDictionary}.approvalSuccess`)
                 : t(`${viewDictionary}.approvalSuccess`)

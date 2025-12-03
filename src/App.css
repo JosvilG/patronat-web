@@ -46,11 +46,8 @@
 
 body {
   background-color: #ffffff;
-  background-image: radial-gradient(
-      at 20% 33%,
-      hsl(115.69, 92%, 41%) 0,
-      transparent 59%
-    ),
+  background-image:
+    radial-gradient(at 20% 33%, hsl(115.69, 92%, 41%) 0, transparent 59%),
     radial-gradient(at 82% 65%, hsl(55.64, 100%, 65%) 0, transparent 55%);
 }
 

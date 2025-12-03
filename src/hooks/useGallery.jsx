@@ -6,13 +6,7 @@ import { db, storage } from '../firebase/firebase'
 /**
  * Recupera imágenes públicas almacenadas en Firebase Storage y proporciona navegación circular.
  *
- * @returns {{
- *   galleryImages: Array,
- *   loadingGallery: boolean,
- *   currentGalleryIndex: number,
- *   handleGalleryNext: () => void,
- *   handleGalleryPrev: () => void
- * }}
+ * @returns {{galleryImages: Array, loadingGallery: boolean, currentGalleryIndex: number, handleGalleryNext: function(): void, handleGalleryPrev: function(): void}}
  */
 const useGallery = () => {
   const [galleryImages, setGalleryImages] = useState([])

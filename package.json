@@ -14,10 +14,11 @@
     "cors-prod": "gsutil cors set cors.json gs://patronat-festes-roquetes.firebasestorage.app",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
-    "lint": "eslint . --ext .js,.jsx",
+    "lint": "eslint . --ex .js,.jsx",
     "lint:fix": "eslint . --ext .js,.jsx --fix",
     "format": "prettier --write .",
     "docs": "jsdoc -c jsdoc.config.json",
+    "docs:open": "cmd /c start \"\" docs/jsdoc/index.html",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
   },

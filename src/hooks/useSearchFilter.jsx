@@ -10,13 +10,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
  * @param {string[]} [options.arrayFields=[]] - Propiedades tipo array que también se examinan.
  * @param {number} [options.debounceTime=300] - Tiempo en ms antes de comprometer la búsqueda.
  * @param {boolean} [options.caseSensitive=false] - Si la búsqueda distingue mayúsculas.
- * @returns {{
- *   searchQuery: string,
- *   filteredItems: T[],
- *   handleSearchChange: (event: { target: { value: string }}) => void,
- *   setSearchQuery: (query: string) => void,
- *   updateItems: (items: T[]) => void
- * }}
+ * @returns {{searchQuery: string, filteredItems: Array.<T>, handleSearchChange: function(Object): void, setSearchQuery: function(string): void, updateItems: function(Array.<T>): void}}
  */
 const useSearchFilter = (initialItems = [], options = {}) => {
   const [items, setItems] = useState(initialItems)
@@ -53,9 +47,7 @@ const useSearchFilter = (initialItems = [], options = {}) => {
       return
     }
 
-    const searchTerm = caseSensitive
-      ? trimmedQuery
-      : trimmedQuery.toLowerCase()
+    const searchTerm = caseSensitive ? trimmedQuery : trimmedQuery.toLowerCase()
 
     const filtered = items.filter((item) => {
       const matchesText = searchFields.some((field) => {
@@ -91,10 +83,10 @@ const useSearchFilter = (initialItems = [], options = {}) => {
   const handleSearchChange = useCallback(
     (event) => {
       const query = event?.target?.value || ''
-      
+
       // Actualizar inmediatamente el valor del input
       setInputValue(query)
-      
+
       // Limpiar el timer anterior si existe
       if (timerRef.current) {
         clearTimeout(timerRef.current)
